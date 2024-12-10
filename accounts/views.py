@@ -6,7 +6,6 @@ from django.contrib.auth import get_user_model
 from .serializers import (
     UserRegistrationSerializer,
     UserProfileSerializer,
-    UserUpdateSerializer,
     ChangePasswordSerializer
 )
 
@@ -19,21 +18,14 @@ class UserRegistrationView(generics.CreateAPIView):
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
-    permission_classes = (IsAuthenticated,)
-
-    def get_object(self):
-        return self.request.user
-
-class UserUpdateView(generics.UpdateAPIView):
-    serializer_class = UserUpdateSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         return self.request.user
 
 class ChangePasswordView(generics.UpdateAPIView):
     serializer_class = ChangePasswordSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         return self.request.user
