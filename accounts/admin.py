@@ -4,9 +4,10 @@ from django.utils.translation import gettext_lazy as _
 from .models import CustomUser
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('email', 'username', 'first_name', 'last_name', 'is_staff')
+    list_display = ('email', 'username', 'first_name', 'last_name', 'is_staff', 'date_modified')
     search_fields = ('email', 'username', 'first_name', 'last_name')
     ordering = ('email',)
+    readonly_fields = ('date_modified',)
     
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
