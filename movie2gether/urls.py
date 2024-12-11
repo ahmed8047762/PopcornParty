@@ -21,8 +21,9 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/auth/', include('accounts.urls')),
+    path('api/accounts/', include('accounts.urls')),
     path('api/movies/', include('movies.urls')),  # Include movies app URLs
+    path('api/events/', include('events.urls')),  # New events app URLs
     path('api-auth/', include('rest_framework.urls')),  # This adds the login/logout views
 ]
 

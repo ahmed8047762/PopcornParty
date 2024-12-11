@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     
     # Local apps
     'accounts',
-    'movies',  # Add the movies app
+    'movies',  
+    'events',  # New events app
 ]
 
 MIDDLEWARE = [
