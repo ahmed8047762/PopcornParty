@@ -1,14 +1,14 @@
 # movies/views.py
 
+from django.core.cache import cache
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 import requests
 from django.conf import settings
-from django.core.cache import cache
+from .models import Movie
+from .serializers import MovieSerializer, OMDbSearchSerializer
 from datetime import datetime
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from .models import Movie, MovieEvent
-from .serializers import MovieEventSerializer, MovieSerializer, OMDbSearchSerializer
 
 class MovieSearchView(generics.ListAPIView):
     serializer_class = MovieSerializer
@@ -62,13 +62,14 @@ class OMDbSearchView(generics.GenericAPIView):
 
         cache.set(cache_key, movie_data, timeout=60*15)  # Cache for 15 minutes
         return Response(movie_data)
-    
-class MovieEventListCreateView(generics.ListCreateAPIView):
-    queryset = MovieEvent.objects.all()
-    serializer_class = MovieEventSerializer
-    permission_classes = [IsAuthenticated]  # Only authenticated users can create events
 
-class MovieEventDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = MovieEvent.objects.all()
-    serializer_class = MovieEventSerializer
-    permission_classes = [IsAuthenticated]  # Only authenticated users can modify events
+# Deprecated: MovieEvent views have been moved to the events app
+# class MovieEventListCreateView(generics.ListCreateAPIView):
+#     queryset = MovieEvent.objects.all()
+#     serializer_class = MovieEventSerializer
+#     permission_classes = [IsAuthenticated]
+
+# class MovieEventDetailView(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = MovieEvent.objects.all()
+#     serializer_class = MovieEventSerializer
+#     permission_classes = [IsAuthenticated]
