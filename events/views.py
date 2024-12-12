@@ -15,10 +15,11 @@ class EventViewSet(generics.ListCreateAPIView):
 
     def get_queryset(self):
         # Show events where user is host or invited
-        return Event.objects.filter(
-            models.Q(host=self.request.user) |
-            models.Q(invitations__invitee=self.request.user)
-        ).distinct()
+        # return Event.objects.filter(
+        #     models.Q(host=self.request.user) |
+        #     models.Q(invitations__invitee=self.request.user)
+        # ).distinct()
+        return Event.objects.all()
 
     def perform_create(self, serializer):
         serializer.save(host=self.request.user)
