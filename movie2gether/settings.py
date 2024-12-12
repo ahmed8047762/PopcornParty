@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'accounts',
     'movies',  
     'events',  # New events app
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -191,3 +192,14 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 OMDB_API_KEY = 'd525f2b3'
+
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'an8047762@gmail.com'
+EMAIL_HOST_PASSWORD = 'dtew epof geai zned'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'

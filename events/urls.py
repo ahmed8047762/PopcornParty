@@ -11,3 +11,4 @@ urlpatterns = [
     path('invitations/', InvitationListView.as_view(), name='invitation-list'),
     path('invitations/<int:pk>/rsvp/', views.RSVPView.as_view(), name='rsvp'),
 ]
+ 
