@@ -16,3 +16,4 @@ whitenoise
 django-allauth
 django-rest-auth
 djangorestframework-simplejwt
+django-cors-headers

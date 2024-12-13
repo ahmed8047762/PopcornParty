@@ -1,6 +1,6 @@
 from rest_framework import generics, permissions, status, exceptions
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -9,9 +9,12 @@ from .serializers import EventSerializer, InvitationSerializer, RSVPSerializer
 
 User = get_user_model()
 
+def index(request):
+    return render(request, 'index.html')  # This will render the main HTML file for React
+
 class EventViewSet(generics.ListCreateAPIView):
     serializer_class = EventSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         # Show events where user is host or invited
@@ -31,10 +34,11 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         # Users can only view events they're hosting or invited to
-        return Event.objects.filter(
-            models.Q(host=self.request.user) |
-            models.Q(invitations__invitee=self.request.user)
-        )
+        # return Event.objects.filter(
+        #     models.Q(host=self.request.user) |
+        #     models.Q(invitations__invitee=self.request.user)
+        # )
+        return Event.objects.all()
 
     def perform_update(self, serializer):
         event = self.get_object()
