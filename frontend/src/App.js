@@ -1,21 +1,26 @@
 // src/App.js
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'; // Use Routes instead of Switch
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './Home';
 import Signup from './Signup';
 import Login from './Login';
-import Navbar from './Navbar'; // Import the Navbar component
+import MovieSearch from './MovieSearch';
+import CreateEvent from './CreateEvent';
+import Navbar from './Navbar';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 const App = () => {
     return (
         <Router>
-            <Navbar /> {/* Add the Navbar here */}
+            <Navbar />
             <div className="container">
-                <Routes> {/* Use Routes instead of Switch */}
-                    <Route path="/" element={<Home />} /> {/* Use element prop for rendering */}
+                <Routes>
+                    <Route path="/" element={<Home />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/movies" element={<MovieSearch />} />
+                    <Route path="/create-event" element={<CreateEvent />} />
                 </Routes>
             </div>
         </Router>
