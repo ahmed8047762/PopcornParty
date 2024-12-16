@@ -1,35 +1,70 @@
+# notifications/views.py
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from events.models import Event, Invitation  # Import Invitation model
+from rest_framework.permissions import IsAuthenticated
+from events.models import Event, Invitation
 from .tasks import send_notification_email
 from .serializers import JoinRequestSerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 class JoinRequestView(generics.CreateAPIView):
-    serializer_class = JoinRequestSerializer  # Add this line
+    permission_classes = [IsAuthenticated]
+    serializer_class = JoinRequestSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user_email = serializer.validated_data['user_email']
         event_id = serializer.validated_data['event_id']
+        user_email = request.user.email
         
-        # Check if the event id is of a non existant event
-        try:
-            Event.objects.get(id=event_id)
-        except Event.DoesNotExist:
-            return Response({"error": "Event does not exist."}, status=status.HTTP_404_NOT_FOUND)
-        
-
-        # Check if the user is already a participant of the event
         try:
             event = Event.objects.get(id=event_id)
-            if Invitation.objects.filter(event=event, invitee__email=user_email, status='accepted').exists():
-                return Response({"message": "You are already a participant of this event."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if the user is already a participant
+            if Invitation.objects.filter(
+                event=event, 
+                invitee=request.user, 
+                status='accepted'
+            ).exists():
+                return Response(
+                    {"message": "You are already a participant of this event."}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            # Send email notification to the event creator via Celery task
-            send_notification_email.delay(event.host.email, f"{user_email} wants to join the event: {event.title}")
-            return Response({"message": "Join request sent successfully."}, status=status.HTTP_201_CREATED)
+            # Create a pending invitation
+            Invitation.objects.get_or_create(
+                event=event,
+                invitee=request.user,
+                defaults={'status': 'pending'}
+            )
+
+            # Send email notification
+            try:
+                send_notification_email.delay(user_email, event_id)
+                return Response(
+                    {"message": "Join request sent successfully. Please wait for approval."}, 
+                    status=status.HTTP_200_OK
+                )
+            except Exception as e:
+                logger.error(f"Failed to send notification email: {str(e)}")
+                return Response(
+                    {"message": "Join request recorded but notification failed to send."}, 
+                    status=status.HTTP_200_OK
+                )
+
         except Event.DoesNotExist:
-            return Response({"error": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Event does not exist."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error processing join request: {str(e)}")
+            return Response(
+                {"error": "Failed to process join request."}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
