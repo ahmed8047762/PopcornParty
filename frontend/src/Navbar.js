@@ -6,6 +6,7 @@ import axios from 'axios';
 const Navbar = () => {
     const navigate = useNavigate();
     const isAuthenticated = !!localStorage.getItem('access_token');
+    const userEmail = localStorage.getItem('user_email');
 
     const handleLogout = async () => {
         try {
@@ -32,11 +33,20 @@ const Navbar = () => {
                 config
             );
 
-            localStorage.clear();
+            // Clear all auth data including email
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user_email');
+            delete axios.defaults.headers.common['Authorization'];
+
             navigate('/login');
         } catch (error) {
             console.error('Logout error:', error);
-            localStorage.clear();
+            // Clear all auth data including email
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user_email');
+            delete axios.defaults.headers.common['Authorization'];
             navigate('/login');
         }
     };
@@ -53,9 +63,13 @@ const Navbar = () => {
                         <li className="nav-item">
                             <Link className="nav-link" to="/">Home</Link>
                         </li>
-                        <li className="nav-item">
-                            <Link className="nav-link" to="/movies">Movies</Link>
-                        </li>
+                        {isAuthenticated && (
+                            <>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/movies">Movies</Link>
+                                </li>
+                            </>
+                        )}
                     </ul>
                     <ul className="navbar-nav">
                         {!isAuthenticated ? (
@@ -68,9 +82,14 @@ const Navbar = () => {
                                 </li>
                             </>
                         ) : (
-                            <li className="nav-item">
-                                <button onClick={handleLogout} className="nav-link btn btn-link">Logout</button>
-                            </li>
+                            <>
+                                <li className="nav-item">
+                                    <span className="nav-link text-light">{userEmail}</span>
+                                </li>
+                                <li className="nav-item">
+                                    <button onClick={handleLogout} className="nav-link btn btn-link">Logout</button>
+                                </li>
+                            </>
                         )}
                     </ul>
                 </div>

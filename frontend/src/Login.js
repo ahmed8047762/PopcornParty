@@ -16,9 +16,10 @@ const Login = () => {
                 password,
             });
             
-            // Store the tokens in localStorage
+            // Store the tokens and user email in localStorage
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
+            localStorage.setItem('user_email', email);  // Store the email
             
             // Set the default Authorization header for future requests
             axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;

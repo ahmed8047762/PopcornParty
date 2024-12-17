@@ -1,12 +1,13 @@
-from rest_framework import generics, permissions, status, exceptions
+from rest_framework import generics, permissions, status, exceptions, viewsets
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404, render
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import models
-from django.contrib.auth import get_user_model
+from django.db.models import Q
 from .models import Event, Invitation
 from .serializers import EventSerializer, InvitationSerializer, RSVPSerializer
-from rest_framework import serializers
 from notifications.tasks import send_invitation_email
 import logging
 
@@ -21,12 +22,27 @@ class PublicEventListView(generics.ListAPIView):
     """View for listing all events without authentication"""
     serializer_class = EventSerializer
     permission_classes = []  # No authentication required
+    authentication_classes = []  # No authentication required
 
     def get_queryset(self):
         # Return all future events, ordered by creation date
         return Event.objects.filter(
             date__gte=timezone.now()
         ).order_by('-created_at')
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # Add request to context even for unauthenticated users
+        context['request'] = self.request
+        return context
+
+    def list(self, request, *args, **kwargs):
+        # Log authentication status for debugging
+        logger.info(f"User authenticated: {request.user.is_authenticated if request.user else False}")
+        if request.user.is_authenticated:
+            logger.info(f"User email: {request.user.email}")
+        response = super().list(request, *args, **kwargs)
+        return response
 
 class EventViewSet(generics.ListCreateAPIView):
     """View for creating events and listing user-specific events"""
@@ -66,12 +82,12 @@ class InvitationCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        event_pk = self.kwargs.get('event_pk')
-        print(f"Creating invitation for event {event_pk}")
+        event_id = self.kwargs.get('event_id')
+        print(f"Creating invitation for event {event_id}")
         print(f"Request data: {request.data}")
         
         # Get the event or return 404
-        event = get_object_or_404(Event, pk=event_pk)
+        event = get_object_or_404(Event, pk=event_id)
         
         # Check if user is the host
         if event.host != request.user:
