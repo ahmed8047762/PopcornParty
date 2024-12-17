@@ -34,14 +34,21 @@ class EventSerializer(serializers.ModelSerializer):
         read_only_fields = ('host', 'host_email', 'created_at', 'updated_at')
 
 class InvitationSerializer(serializers.ModelSerializer):
-    event_details = EventSerializer(source='event', read_only=True)
-    invitee_email = serializers.EmailField(write_only=True)
+    event = EventSerializer(read_only=True)
+    invitee_email = serializers.EmailField()
+    invitee = serializers.SerializerMethodField(read_only=True)
+    
+    def get_invitee(self, obj):
+        if obj.invitee:
+            return {
+                'email': obj.invitee.email
+            }
+        return None
     
     class Meta:
         model = Invitation
-        fields = ['id', 'event', 'event_details', 'invitee', 'invitee_email',
-                 'status', 'invited_at', 'responded_at']
-        read_only_fields = ('invited_at', 'responded_at', 'invitee', 'event')
+        fields = ['id', 'event', 'invitee', 'invitee_email', 'status', 'invited_at', 'responded_at']
+        read_only_fields = ('invited_at', 'responded_at', 'invitee')
 
 class RSVPSerializer(serializers.ModelSerializer):
     class Meta:

@@ -6,14 +6,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 @shared_task
-def send_invitation_email(invitee_email, event_id):
+def send_invitation_email(invitation_id):
     """Send an invitation email to a user for an event"""
     try:
-        # Import Event model here to avoid AppRegistryNotReady error
-        from events.models import Event
+        # Import models here to avoid circular imports
+        from events.models import Invitation
         
-        # Get the event details
-        event = Event.objects.get(id=event_id)
+        # Get the invitation details
+        invitation = Invitation.objects.get(id=invitation_id)
+        event = invitation.event
         
         subject = f'Invitation to Movie Event: {event.title}'
         message = (
@@ -31,9 +32,9 @@ def send_invitation_email(invitee_email, event_id):
         )
         
         email_from = settings.DEFAULT_FROM_EMAIL
-        recipient_list = [invitee_email]
+        recipient_list = [invitation.invitee_email]
         
-        logger.info(f'Sending invitation email for event {event_id} to {invitee_email}')
+        logger.info(f'Sending invitation email for event {event.id} to {invitation.invitee_email}')
         
         # Send the email
         send_mail(
@@ -44,15 +45,15 @@ def send_invitation_email(invitee_email, event_id):
             fail_silently=False,
         )
         
-        logger.info(f'Invitation email sent successfully to {invitee_email}')
+        logger.info(f'Invitation email sent successfully to {invitation.invitee_email}')
         return True
         
-    except Event.DoesNotExist:
-        logger.error(f'Event with id {event_id} not found')
-        raise
+    except Invitation.DoesNotExist:
+        logger.error(f'Invitation with id {invitation_id} not found')
+        return False
     except Exception as e:
         logger.error(f'Error sending invitation email: {str(e)}')
-        raise
+        return False
 
 @shared_task
 def send_join_request_email(user_email, event_id):

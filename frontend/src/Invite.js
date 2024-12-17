@@ -69,13 +69,19 @@ const Invite = () => {
             }
         } catch (error) {
             console.error('Error sending invitation:', error);
+            console.error('Error response:', error.response?.data);  // Log the full error response
+            
             if (error.response) {
                 if (error.response.status === 401) {
                     alert('Please log in again to continue');
                     localStorage.clear();
                     navigate('/login');
                 } else {
-                    setError(error.response.data.error || 'Failed to send invitation');
+                    // Show the specific error message from the backend
+                    const errorMessage = error.response.data.error || 
+                                      error.response.data.invitee_email || 
+                                      'Failed to send invitation';
+                    setError(errorMessage);
                 }
             } else {
                 setError('Failed to send invitation. Please try again.');

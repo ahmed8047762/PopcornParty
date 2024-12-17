@@ -24,12 +24,18 @@ class Event(models.Model):
 class Invitation(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='invitations')
     invitee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='invitations')
+    invitee_email = models.EmailField()  
     status = models.CharField(max_length=20, choices=Event.STATUS_CHOICES, default='pending')
     invited_at = models.DateTimeField(auto_now_add=True)
     responded_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        unique_together = ['event', 'invitee']
+        unique_together = ['event', 'invitee_email']  
+
+    def save(self, *args, **kwargs):
+        if not self.invitee_email and self.invitee:
+            self.invitee_email = self.invitee.email
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.invitee.email} - {self.event.title}"
+        return f"{self.invitee_email} - {self.event.title}"

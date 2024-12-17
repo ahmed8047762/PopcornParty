@@ -7,6 +7,7 @@ import Login from './Login';
 import MovieSearch from './MovieSearch';
 import CreateEvent from './CreateEvent';
 import Invite from './Invite';
+import MyInvitations from './MyInvitations';
 import Navbar from './Navbar';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
@@ -23,6 +24,7 @@ const App = () => {
                     <Route path="/movies" element={<MovieSearch />} />
                     <Route path="/create-event" element={<CreateEvent />} />
                     <Route path="/invite/:eventId" element={<Invite />} />
+                    <Route path="/my-invitations" element={<MyInvitations />} />
                 </Routes>
             </div>
         </Router>
