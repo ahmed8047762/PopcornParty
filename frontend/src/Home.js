@@ -9,24 +9,32 @@ const Home = () => {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [userEmail, setUserEmail] = useState(null);
 
     useEffect(() => {
         const accessToken = localStorage.getItem('access_token');
+        const email = localStorage.getItem('user_email');
+        console.log('User email from localStorage:', email);
         setIsAuthenticated(!!accessToken);
+        setUserEmail(email);
 
         // Fetch events from the public endpoint
         axios.get('http://127.0.0.1:8000/api/events/public/', {
             headers: {
                 'Content-Type': 'application/json',
+                ...(accessToken && { 'Authorization': `Bearer ${accessToken}` })
             }
         })
         .then(response => {
+            console.log('Events response:', response.data);
             setEvents(response.data);
             setError(null);
         })
         .catch(error => {
             console.error('Error fetching events:', error);
             setError('Failed to load events. Please try again later.');
+            // Clear events to show empty state
+            setEvents([]);
         });
     }, [navigate]);
 
@@ -73,6 +81,15 @@ const Home = () => {
         }
     };
 
+    const handleInvite = (eventId) => {
+        navigate(`/invite/${eventId}`);
+    };
+
+    const isEventHost = (event) => {
+        console.log('Comparing emails - Event host:', event.host_email, 'User:', userEmail);
+        return event.host_email === userEmail;
+    };
+
     return (
         <div className="home-container">
             <h2>Available Events</h2>
@@ -81,28 +98,54 @@ const Home = () => {
                 <p>No events available. {isAuthenticated ? 'Why not create one?' : 'Please check back later!'}</p>
             ) : (
                 <div className="events-grid">
-                    {events.map(event => (
-                        <div key={event.id} className="event-card">
-                            <img 
-                                src={event.movie_details?.poster || 'https://via.placeholder.com/150x225?text=No+Poster'} 
-                                alt={event.movie_details?.title || 'Movie poster'} 
-                                className="event-poster"
-                            />
-                            <div className="event-info">
-                                <h3>{event.title}</h3>
-                                <p>{event.description}</p>
-                                <p><strong>Date:</strong> {new Date(event.date).toLocaleString()}</p>
-                                <p><strong>Location:</strong> {event.location}</p>
-                                <p><strong>Host:</strong> {event.host_email || 'Anonymous'}</p>
-                                <button 
-                                    onClick={() => handleJoinRequest(event.id)}
-                                    className="btn btn-primary"
-                                >
-                                    Join Event
-                                </button>
+                    {events.map(event => {
+                        console.log('Event:', event);
+                        const isHost = isEventHost(event);
+                        console.log('Is host?', isHost);
+                        return (
+                            <div key={event.id} className="event-card">
+                                <img 
+                                    src={event.poster_url || 'https://via.placeholder.com/300x450?text=No+Poster'} 
+                                    alt={event.title || 'Movie poster'} 
+                                    className="event-poster"
+                                />
+                                <div className="event-info">
+                                    <h3>{event.title}</h3>
+                                    <p>{event.description}</p>
+                                    <p><strong>Date:</strong> {new Date(event.date).toLocaleString()}</p>
+                                    <p><strong>Location:</strong> {event.location}</p>
+                                    <p><strong>Host:</strong> {event.host_email || 'Anonymous'}</p>
+                                    <div className="event-actions">
+                                        {isAuthenticated && (
+                                            isHost ? (
+                                                <button 
+                                                    onClick={() => handleInvite(event.id)}
+                                                    className="btn btn-secondary"
+                                                >
+                                                    Invite Someone
+                                                </button>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => handleJoinRequest(event.id)}
+                                                    className="btn btn-primary"
+                                                >
+                                                    Join Event
+                                                </button>
+                                            )
+                                        )}
+                                        {!isAuthenticated && (
+                                            <button 
+                                                onClick={() => navigate('/login')}
+                                                className="btn btn-primary"
+                                            >
+                                                Login to Join
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>
