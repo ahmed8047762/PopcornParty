@@ -1,7 +1,7 @@
 // src/Login.js
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from './axiosConfig';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -11,7 +11,7 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://127.0.0.1:8000/api/accounts/login/', {
+            const response = await axiosInstance.post('http://127.0.0.1:8000/api/accounts/login/', {
                 email,
                 password,
             });
@@ -19,17 +19,13 @@ const Login = () => {
             // Store the tokens and user email in localStorage
             localStorage.setItem('access_token', response.data.access);
             localStorage.setItem('refresh_token', response.data.refresh);
-            localStorage.setItem('user_email', email);  // Store the email
-            
-            // Set the default Authorization header for future requests
-            axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
+            localStorage.setItem('user_email', email);
             
             alert('Logged in successfully!');
-            navigate('/'); // Redirect to home page
+            navigate('/');
         } catch (error) {
             console.error('Error logging in:', error);
             if (error.response) {
-                console.error('Response data:', error.response.data);
                 alert(`Failed to log in: ${error.response.data.detail || JSON.stringify(error.response.data)}`);
             } else {
                 alert('Failed to log in: Network error');
@@ -65,7 +61,7 @@ const Login = () => {
                         required
                     />
                 </div>
-                <button type="submit" className="btn btn-primary">Log In</button>
+                <button type="submit" className="btn btn-primary">Login</button>
             </form>
         </div>
     );

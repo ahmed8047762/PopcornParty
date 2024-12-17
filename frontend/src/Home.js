@@ -14,7 +14,7 @@ const Home = () => {
     useEffect(() => {
         const accessToken = localStorage.getItem('access_token');
         const email = localStorage.getItem('user_email');
-        console.log('User email from localStorage:', email);
+        // console.log('User email from localStorage:', email);
         setIsAuthenticated(!!accessToken);
         setUserEmail(email);
 
@@ -26,7 +26,7 @@ const Home = () => {
             }
         })
         .then(response => {
-            console.log('Events response:', response.data);
+            // console.log('Events response:', response.data);
             setEvents(response.data);
             setError(null);
         })
@@ -86,7 +86,7 @@ const Home = () => {
     };
 
     const isEventHost = (event) => {
-        console.log('Comparing emails - Event host:', event.host_email, 'User:', userEmail);
+        // console.log('Comparing emails - Event host:', event.host_email, 'User:', userEmail);
         return event.host_email === userEmail;
     };
 
@@ -99,9 +99,9 @@ const Home = () => {
             ) : (
                 <div className="events-grid">
                     {events.map(event => {
-                        console.log('Event:', event);
+                        // console.log('Event:', event);
                         const isHost = isEventHost(event);
-                        console.log('Is host?', isHost);
+                        // console.log('Is host?', isHost);
                         return (
                             <div key={event.id} className="event-card">
                                 <img 

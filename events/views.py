@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions, status, exceptions, viewsets
+from rest_framework import generics, permissions, status, exceptions, serializers, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404, render
@@ -60,7 +60,6 @@ class EventViewSet(generics.ListCreateAPIView):
         serializer.save(host=self.request.user)
 
 class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Event.objects.all()
     serializer_class = EventSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -69,7 +68,7 @@ class EventDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Event.objects.filter(
             models.Q(host=self.request.user) |
             models.Q(invitations__invitee=self.request.user)
-        )
+        ).distinct()  # Add distinct to prevent duplicates
 
     def perform_update(self, serializer):
         event = self.get_object()
@@ -83,65 +82,68 @@ class InvitationCreateView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         event_id = self.kwargs.get('event_id')
-        print(f"Creating invitation for event {event_id}")
-        print(f"Request data: {request.data}")
-        
-        # Get the event or return 404
-        event = get_object_or_404(Event, pk=event_id)
-        
-        # Check if user is the host
-        if event.host != request.user:
-            raise exceptions.PermissionDenied("Only the host can send invitations")
-        
-        # Validate invitee email
-        invitee_email = request.data.get('invitee_email')
-        if not invitee_email:
-            raise serializers.ValidationError({
-                "invitee_email": "Please provide an email address for the invitee."
-            })
+        logger.info(f"Creating invitation for event {event_id}")
+        logger.info(f"Request data: {request.data}")
+        logger.info(f"Request user: {request.user.email}")
         
         try:
-            invitee = User.objects.get(email=invitee_email)
-            print(f"Found invitee: {invitee.email}")
-        except User.DoesNotExist:
-            print(f"No user found with email: {invitee_email}")
-            raise serializers.ValidationError({
-                "invitee_email": f"No user found with email: {invitee_email}. They need to register first."
-            })
-        
-        # Check if the host is trying to invite themselves
-        if invitee == request.user:
-            print("Host tried to invite themselves")
-            raise serializers.ValidationError({
-                "invitee_email": "You cannot invite yourself to your own event."
-            })
-        
-        # Check if invitation already exists
-        if Invitation.objects.filter(event=event, invitee=invitee).exists():
-            print(f"Invitation already exists for {invitee.email}")
-            raise serializers.ValidationError({
-                "invitee_email": "This user has already been invited to this event."
-            })
-        
-        try:
+            # Get the event or return 404
+            event = get_object_or_404(Event, pk=event_id)
+            logger.info(f"Found event: {event.title}")
+            
+            # Check if user is the host
+            if event.host != request.user:
+                logger.warning(f"Permission denied: {request.user.email} is not the host of event {event.id}")
+                raise exceptions.PermissionDenied("Only the host can send invitations")
+            
+            # Validate invitee email
+            invitee_email = request.data.get('invitee_email')
+            if not invitee_email:
+                logger.warning("No invitee email provided")
+                raise serializers.ValidationError({
+                    "invitee_email": "Please provide an email address for the invitee."
+                })
+
+            logger.info(f"Checking for existing invitation for {invitee_email}")
+            # Check if invitation already exists
+            existing_invitation = Invitation.objects.filter(
+                event=event,
+                invitee_email=invitee_email,
+                status='pending'
+            ).first()
+            
+            if existing_invitation:
+                logger.warning(f"Found existing pending invitation for {invitee_email}")
+                raise serializers.ValidationError({
+                    "invitee_email": "A pending invitation already exists for this email."
+                })
+
+            # Try to find a user with this email
+            invitee = User.objects.filter(email=invitee_email).first()
+            logger.info(f"Found existing user for email: {invitee is not None}")
+            
             # Create the invitation
             invitation = Invitation.objects.create(
                 event=event,
-                invitee=invitee,
+                invitee=invitee,  # This might be None if user doesn't exist
+                invitee_email=invitee_email,
                 status='pending'
             )
-            print(f"Successfully created invitation for {invitee.email}")
-            
-            # Send invitation email asynchronously
-            send_invitation_email.delay(invitee_email, event.id)
-            print(f"Queued invitation email to {invitee_email}")
-            
-            # Serialize and return the response
+            logger.info(f"Created invitation {invitation.id}")
+
+            # Send email notification (async)
+            send_invitation_email.delay(invitation.id)
+            logger.info(f"Queued invitation email for {invitation.id}")
+
+            # Return the serialized invitation
             serializer = self.get_serializer(invitation)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
             
+        except serializers.ValidationError as e:
+            logger.warning(f"Validation error: {str(e)}")
+            raise
         except Exception as e:
-            print(f"Error creating invitation: {str(e)}")
+            logger.error(f"Error creating invitation: {str(e)}")
             raise serializers.ValidationError({
                 "error": f"Failed to create invitation: {str(e)}"
             })
@@ -151,23 +153,46 @@ class InvitationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Return invitations where the user is the invitee
-        return Invitation.objects.filter(invitee=self.request.user)
+        # Return invitations where the user's email matches invitee_email
+        return Invitation.objects.filter(invitee_email=self.request.user.email)
 
 class RSVPView(generics.UpdateAPIView):
     serializer_class = RSVPSerializer
     permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'pk'
 
     def get_queryset(self):
-        return Invitation.objects.filter(invitee=self.request.user)
+        # Filter by invitee_email
+        return Invitation.objects.filter(invitee_email=self.request.user.email)
 
     def perform_update(self, serializer):
         invitation = self.get_object()
+        logger.info(f"Processing RSVP for invitation {invitation.id}")
+        logger.info(f"Current status: {invitation.status}")
+        logger.info(f"New status: {serializer.validated_data.get('status')}")
+        
         # Check if the status is provided in the validated data
-        if 'status' in serializer.validated_data:
-            invitation.status = serializer.validated_data['status']
-        else:
-            raise serializers.ValidationError("Status must be provided.")
+        if 'status' not in serializer.validated_data:
+            raise serializers.ValidationError({"status": "Status field is required"})
+        
+        new_status = serializer.validated_data['status']
+        if new_status not in ['accepted', 'declined']:
+            raise serializers.ValidationError({"status": "Status must be either 'accepted' or 'declined'"})
+        
+        # Update the invitation
+        invitation.status = new_status
         invitation.responded_at = timezone.now()
-        invitation.save()  # Save the updated invitation
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        # If accepting, ensure the user is linked
+        if new_status == 'accepted' and not invitation.invitee:
+            invitation.invitee = self.request.user
+        
+        invitation.save()
+        logger.info(f"Updated invitation {invitation.id} status to {new_status}")
+        
+        # Return success response
+        return Response({
+            "message": f"Successfully {new_status} the invitation",
+            "invitation_id": invitation.id,
+            "status": new_status
+        }, status=status.HTTP_200_OK)
