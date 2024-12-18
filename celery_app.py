@@ -1,11 +1,15 @@
 import os
 from celery import Celery
 import logging
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'movie2gether.settings')
+
+# Load environment variables
+load_dotenv(override=True)
 
 # Get Redis URL from environment variable, default to Redis service URL in Docker
 broker_url = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
@@ -14,6 +18,7 @@ broker_url = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
 logger.info(f"EMAIL_HOST_USER: {os.environ.get('EMAIL_HOST_USER')}")
 logger.info(f"REDIS_URL: {os.environ.get('REDIS_URL')}")
 
+# Create celery app
 app = Celery('movie2gether', broker=broker_url)
 
 # Configure Celery to use Redis as broker and result backend
