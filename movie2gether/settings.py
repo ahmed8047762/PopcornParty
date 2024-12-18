@@ -203,15 +203,23 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 OMDB_API_KEY = 'd525f2b3'
 
 # Email settings
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Force reload environment variables from .env file
+env_path = os.path.join(BASE_DIR, '.env')
+
+# Force reload environment variables
+load_dotenv(env_path, override=True)
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-from dotenv import load_dotenv
-load_dotenv()
+
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
