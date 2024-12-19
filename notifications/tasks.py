@@ -74,6 +74,7 @@ def send_join_request_email(user_email, event_id):
     try:
         # Import Event model here to avoid AppRegistryNotReady error
         from events.models import Event
+        from django.conf import settings
         
         # Get the event details
         event = Event.objects.get(id=event_id)
@@ -92,17 +93,23 @@ def send_join_request_email(user_email, event_id):
             f"Movie2gether Team"
         )
         
-        email_from = settings.DEFAULT_FROM_EMAIL
-        recipient_list = [event.host.email]  # Send to event host
-        
+        sender_email = settings.EMAIL_HOST_USER
+        if not sender_email:
+            logger.error("EMAIL_HOST_USER not found in settings")
+            logger.error(f"Available settings: EMAIL_HOST={settings.EMAIL_HOST}, "
+                       f"EMAIL_PORT={settings.EMAIL_PORT}, "
+                       f"EMAIL_USE_TLS={settings.EMAIL_USE_TLS}")
+            raise ValueError("Sender email not configured")
+            
         logger.info(f'Sending join request email for event {event_id} to {event.host.email}')
+        logger.info(f'Using sender email: {sender_email}')
         
         # Send the email
         send_mail(
             subject=subject,
             message=message,
-            from_email=email_from,
-            recipient_list=recipient_list,
+            from_email=sender_email,
+            recipient_list=[event.host.email],
             fail_silently=False,
         )
         
