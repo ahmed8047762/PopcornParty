@@ -165,6 +165,10 @@ SIMPLE_JWT = {
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True  # Only for development
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -209,6 +213,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 OMDB_API_KEY = 'd525f2b3'
 
 # Email settings
+from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Force reload environment variables from .env file
+env_path = os.path.join(BASE_DIR, '.env')
+
+# Force reload environment variables
+load_dotenv(env_path, override=True)
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587

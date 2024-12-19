@@ -16,7 +16,20 @@ def send_invitation_email(invitation_id):
         invitation = Invitation.objects.get(id=invitation_id)
         event = invitation.event
         
+        # Check if the invitee is already registered
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        is_registered = User.objects.filter(email=invitation.invitee_email).exists()
+        
         subject = f'Invitation to Movie Event: {event.title}'
+        
+        # Customize message based on whether the user is registered
+        if is_registered:
+            action_text = "Please log in to Movie2gether to accept or decline this invitation."
+        else:
+            action_text = ("You don't have an account yet. Please sign up at Movie2gether "
+                         "using this email address to respond to this invitation.")
+        
         message = (
             f"Hello!\n\n"
             f"You have been invited to join a movie event!\n\n"
@@ -26,7 +39,7 @@ def send_invitation_email(invitation_id):
             f"- Location: {event.location}\n"
             f"- Host: {event.host.email}\n\n"
             f"Description: {event.description}\n\n"
-            f"Please log in to Movie2gether to accept or decline this invitation.\n\n"
+            f"{action_text}\n\n"
             f"Best regards,\n"
             f"Movie2gether Team"
         )

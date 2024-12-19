@@ -1,5 +1,6 @@
 import os
 from celery import Celery
+
 import logging
 from dotenv import load_dotenv
 
