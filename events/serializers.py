@@ -47,8 +47,8 @@ class InvitationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Invitation
-        fields = ['id', 'event', 'invitee', 'invitee_email', 'status', 'invited_at', 'responded_at']
-        read_only_fields = ('invited_at', 'responded_at', 'invitee')
+        fields = ['id', 'event', 'invitee', 'invitee_email', 'status', 'created_at', 'responded_at']
+        read_only_fields = ('created_at', 'responded_at', 'invitee')
 
 class RSVPSerializer(serializers.ModelSerializer):
     class Meta:

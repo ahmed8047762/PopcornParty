@@ -43,6 +43,7 @@ const CreateEvent = () => {
                 date: `${eventData.date}T${eventData.time}:00Z`,
                 location: eventData.location,
                 movie: eventData.movie,
+                invitee_email: inviteeEmail // Add invitee email to event creation
             });
 
             const response = await axios.post(
@@ -53,6 +54,7 @@ const CreateEvent = () => {
                     date: `${eventData.date}T${eventData.time}:00Z`,
                     location: eventData.location,
                     movie: eventData.movie,
+                    invitee_email: inviteeEmail // Add invitee email to event creation
                 },
                 {
                     headers: {
@@ -63,46 +65,6 @@ const CreateEvent = () => {
             );
 
             console.log('Event creation response:', response);
-
-            // If event creation was successful and we have an invitee email
-            if (response.data.id && inviteeEmail) {
-                try {
-                    console.log('Sending invitation with data:', {
-                        invitee_email: inviteeEmail,
-                    });
-                    
-                    const inviteResponse = await axios.post(
-                        `http://127.0.0.1:8000/api/events/${response.data.id}/invite/`,
-                        { invitee_email: inviteeEmail },
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${accessToken}`,
-                                'Content-Type': 'application/json',
-                            }
-                        }
-                    );
-
-                    console.log('Invitation response:', inviteResponse);
-
-                    if (inviteResponse.status === 201) {
-                        navigate('/');
-                    }
-                } catch (inviteError) {
-                    console.error('Error sending invitation:', inviteError);
-                    console.error('Error response data:', inviteError.response?.data);
-                    
-                    const errorMessage = inviteError.response?.data?.invitee_email?.[0] || 
-                                      inviteError.response?.data?.detail ||
-                                      inviteError.response?.data?.[0] || 
-                                      'Failed to send invitation';
-                    setError(`Event created but ${errorMessage}`);
-                    setTimeout(() => {
-                        navigate('/');
-                    }, 3000);
-                    return;
-                }
-            }
-
             navigate('/');
         } catch (error) {
             console.error('Error creating event:', error);

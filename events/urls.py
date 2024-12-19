@@ -1,17 +1,21 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
-from .views import InvitationListView, PublicEventListView
 
 app_name = 'events'
 
+# Create routers for ViewSets
+router = DefaultRouter()
+router.register(r'invitations', views.InvitationViewSet, basename='invitation')
+router.register(r'', views.EventViewSet, basename='event')
+
 urlpatterns = [
     # Public endpoints
-    path('public/', PublicEventListView.as_view(), name='public-event-list'),
+    path('public/', views.PublicEventListView.as_view(), name='public-event-list'),
     
-    # Authenticated endpoints
-    path('', views.EventViewSet.as_view(), name='event-list'),
-    path('<int:pk>/', views.EventDetailView.as_view(), name='event-detail'),
+    # ViewSet URLs - include both event and invitation URLs
+    path('', include(router.urls)),
+    
+    # Event-specific invitation creation
     path('<int:event_id>/invite/', views.InvitationCreateView.as_view(), name='create-invitation'),
-    path('invitations/', InvitationListView.as_view(), name='invitation-list'),
-    path('invitations/<int:pk>/rsvp/', views.RSVPView.as_view(), name='rsvp'),
 ]

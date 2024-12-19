@@ -49,27 +49,33 @@ const Invite = () => {
             return;
         }
 
-        try {
-            const response = await axios.post(
-                `http://127.0.0.1:8000/api/events/${eventId}/invite/`,
-                {
-                    invitee_email: email
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
-                    }
-                }
-            );
+        // Split email string by commas and trim whitespace
+        const emails = email.split(',').map(email => email.trim()).filter(email => email);
 
-            if (response.status === 201) {
-                setSuccess('Invitation sent successfully!');
-                setEmail('');
-            }
+        try {
+            // Send invitations for each email
+            const promises = emails.map(async (singleEmail) => {
+                return axios.post(
+                    `http://127.0.0.1:8000/api/events/${eventId}/invite/`,
+                    {
+                        email: singleEmail
+                    },
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        }
+                    }
+                );
+            });
+
+            // Wait for all invitations to be sent
+            await Promise.all(promises);
+            setSuccess('Invitations sent successfully!');
+            setEmail('');
         } catch (error) {
             console.error('Error sending invitation:', error);
-            console.error('Error response:', error.response?.data);  // Log the full error response
+            console.error('Error response:', error.response?.data);
             
             if (error.response) {
                 if (error.response.status === 401) {
@@ -79,7 +85,7 @@ const Invite = () => {
                 } else {
                     // Show the specific error message from the backend
                     const errorMessage = error.response.data.error || 
-                                      error.response.data.invitee_email || 
+                                      error.response.data.email || 
                                       'Failed to send invitation';
                     setError(errorMessage);
                 }
@@ -117,7 +123,7 @@ const Invite = () => {
                         id="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter email address"
+                        placeholder="Enter email address(es), separated by commas"
                         required
                         className="form-control"
                     />
